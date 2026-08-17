@@ -27,6 +27,8 @@ _ALLOY_ZH = {"gray_iron": "灰铸铁", "ductile_iron": "球墨铸铁", "steel": 
 
 def shrinkage_rate(alloy: str, restrained: bool = True) -> float:
     """模样放尺用线收缩率(%)。restrained=True取受阻收缩(常用)。"""
+    if alloy not in _SHRINK:
+        raise ValueError(f"unknown alloy: {alloy} (可选: {', '.join(_SHRINK)})")
     free, rest = _SHRINK[alloy]
     return rest if restrained else free
 
@@ -44,7 +46,10 @@ _RMA = {
 
 def machining_allowance(basic_size_mm: float, grade: str = "G") -> float:
     """按GB/T 6414-2017查机械加工余量(mm)。basic_size=铸件该方向最大尺寸。"""
-    for limit, rma in _RMA[grade.upper()]:
+    g = grade.upper()
+    if g not in _RMA:
+        raise ValueError(f"grade must be one of E/F/G/H/J, got '{grade}'")
+    for limit, rma in _RMA[g]:
         if basic_size_mm <= limit:
             return rma
     raise ValueError(f"size {basic_size_mm} exceeds table (<=1600mm)")
@@ -68,11 +73,14 @@ _MIN_WALL = {
     "ductile_iron": [(200, 5), (500, 8), (1000, 12), (2000, 18)],
     "steel":        [(200, 6), (500, 10), (1000, 15), (2000, 20)],
     "aluminum":     [(200, 3), (500, 4), (1000, 6), (2000, 8)],
+    "bronze":       [(200, 3), (500, 5), (1000, 7), (2000, 9)],
 }
 
 
 def min_wall(alloy: str, contour_mm: float) -> float:
     """砂型铸造最小允许壁厚(mm)。contour=铸件轮廓最大尺寸。"""
+    if alloy not in _MIN_WALL:
+        raise ValueError(f"unknown alloy: {alloy} (可选: {', '.join(_MIN_WALL)})")
     for limit, w in _MIN_WALL[alloy]:
         if contour_mm <= limit:
             return w

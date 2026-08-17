@@ -48,43 +48,50 @@ def main(argv=None):
 
     lk = sub.add_parser("lookup", help="工艺参数速查 parameter lookup")
     lks = lk.add_subparsers(dest="what", required=True)
-    s1 = lks.add_parser("shrink"); s1.add_argument("--alloy", required=True)
+    s1 = lks.add_parser("shrink"); s1.add_argument("--alloy", required=True, choices=ALLOYS + ["bronze"])
     s1.add_argument("--free", action="store_true", help="取自由收缩(默认受阻)")
     s2 = lks.add_parser("rma"); s2.add_argument("--size", type=float, required=True)
-    s2.add_argument("--grade", default="G")
+    s2.add_argument("--grade", default="G", choices=["E", "F", "G", "H", "J"])
     s3 = lks.add_parser("draft"); s3.add_argument("--height", type=float, required=True)
-    s4 = lks.add_parser("wall"); s4.add_argument("--alloy", required=True)
+    s4 = lks.add_parser("wall"); s4.add_argument("--alloy", required=True, choices=ALLOYS + ["bronze"])
     s4.add_argument("--size", type=float, required=True)
 
     a = ap.parse_args(argv)
     zh = not a.en
 
-    if a.cmd == "gating":
-        res = design_gating(a.weight, a.wall, a.h0, a.height, a.alloy, a.pos)
-        print(res.report(zh=zh))
-    elif a.cmd == "riser":
-        res = design_riser(a.volume, a.area, a.alloy, a.rtype, a.hd)
-        print(res.report(zh=zh))
-        if a.feed_wall:
-            fd = feeding_distance(a.feed_wall)
-            fdc = feeding_distance(a.feed_wall, with_chill=True)
-            print((f"补缩距离参考(板厚{a.feed_wall:g}mm): 无冷铁≈{fd:.0f}mm, 加冷铁≈{fdc:.0f}mm")
-                  if zh else
-                  (f"Feeding distance (T={a.feed_wall:g}mm): ~{fd:.0f}mm, with chill ~{fdc:.0f}mm"))
-    elif a.cmd == "lookup":
-        if a.what == "shrink":
-            v = shrinkage_rate(a.alloy, restrained=not a.free)
-            print(f"{'线收缩率' if zh else 'Linear shrinkage'}: {v}%"
-                  + ("(受阻)" if zh and not a.free else "(自由)" if zh else ""))
-        elif a.what == "rma":
-            v = machining_allowance(a.size, a.grade)
-            print(f"{'加工余量' if zh else 'Machining allowance'} (GB/T 6414 {a.grade.upper()}): {v} mm")
-        elif a.what == "draft":
-            v = draft_angle(a.height)
-            print(f"{'起模斜度' if zh else 'Draft angle'}: {v}°")
-        elif a.what == "wall":
-            v = min_wall(a.alloy, a.size)
-            print(f"{'最小壁厚' if zh else 'Min wall thickness'}: {v} mm")
+    try:
+        if a.cmd == "gating":
+            res = design_gating(a.weight, a.wall, a.h0, a.height, a.alloy, a.pos)
+            print(res.report(zh=zh))
+        elif a.cmd == "riser":
+            res = design_riser(a.volume, a.area, a.alloy, a.rtype, a.hd)
+            print(res.report(zh=zh))
+            if a.feed_wall:
+                fd = feeding_distance(a.feed_wall)
+                fdc = feeding_distance(a.feed_wall, with_chill=True)
+                print((f"补缩距离参考(板厚{a.feed_wall:g}mm): 无冷铁≈{fd:.0f}mm, 加冷铁≈{fdc:.0f}mm")
+                      if zh else
+                      (f"Feeding distance (T={a.feed_wall:g}mm): ~{fd:.0f}mm, with chill ~{fdc:.0f}mm"))
+        elif a.cmd == "lookup":
+            if a.what == "shrink":
+                v = shrinkage_rate(a.alloy, restrained=not a.free)
+                print(f"{'线收缩率' if zh else 'Linear shrinkage'}: {v}%"
+                      + ("(受阻)" if zh and not a.free else "(自由)" if zh else ""))
+            elif a.what == "rma":
+                v = machining_allowance(a.size, a.grade)
+                print(f"{'加工余量' if zh else 'Machining allowance'} (GB/T 6414 {a.grade.upper()}): {v} mm")
+            elif a.what == "draft":
+                v = draft_angle(a.height)
+                print(f"{'起模斜度' if zh else 'Draft angle'}: {v}°")
+            elif a.what == "wall":
+                v = min_wall(a.alloy, a.size)
+                print(f"{'最小壁厚' if zh else 'Min wall thickness'}: {v} mm")
+    except ValueError as e:
+        print(f"✗ 输入超出适用范围: {e}")
+        return 1
+    except KeyError as e:
+        print(f"✗ 参数无效或超出支持范围: {e}")
+        return 1
     return 0
 
 
