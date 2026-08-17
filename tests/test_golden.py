@@ -66,6 +66,34 @@ def test_params_lookup():
     assert min_wall("gray_iron", 400) == 6
 
 
+def test_bronze_min_wall():
+    # 青铜与其它合金一致可查最小壁厚（修复前 KeyError）
+    assert min_wall("bronze", 300) == 5
+    assert min_wall("bronze", 800) == 7
+
+
+def test_unknown_alloy_friendly_error():
+    # 未知合金抛 ValueError 而非 KeyError
+    try:
+        min_wall("titanium", 300)
+        assert False, "should raise"
+    except ValueError:
+        pass
+    try:
+        shrinkage_rate("titanium")
+        assert False, "should raise"
+    except ValueError:
+        pass
+
+
+def test_invalid_rma_grade_friendly_error():
+    try:
+        machining_allowance(300, "A")
+        assert False, "should raise"
+    except ValueError:
+        pass
+
+
 if __name__ == "__main__":
     fails = 0
     for name, fn in sorted(globals().items()):
